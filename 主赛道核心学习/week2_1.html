@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL窗口函数+推断统计 练习题（带答案解析）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 30px 0 20px;
+            padding-left: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        h3 {
+            color: #34495e;
+            margin: 20px 0 15px;
+        }
+
+        .note {
+            background-color: #e8f4fd;
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        pre {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: "Consolas", "Monaco", monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: "Consolas", "Monaco", monospace;
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #e53e3e;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f7fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        details {
+            margin: 20px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        summary {
+            background-color: #f7fafc;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #2d3748;
+            border-bottom: 1px solid #e2e8f0;
+            user-select: none;
+        }
+
+        summary:hover {
+            background-color: #edf2f7;
+        }
+
+        .answer-content {
+            padding: 16px;
+        }
+
+        .correct {
+            color: #38a169;
+            font-weight: bold;
+        }
+
+        .incorrect {
+            color: #e53e3e;
+            font-weight: bold;
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .formula {
+            text-align: center;
+            font-size: 18px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        .challenge {
+            background-color: #fef5e7;
+            padding: 16px;
+            border-radius: 6px;
+            border-left: 4px solid #ed8936;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SQL窗口函数进阶 + 推断统计 练习题（带答案解析）</h1>
+        
+        <div class="note">
+            <strong>使用说明：</strong>先自己独立完成题目，再点击题目下方的"点击查看答案"展开解析。所有题目基于之前统一的测试数据。
+        </div>
+
+        <h2>第一部分：SQL 窗口函数练习题</h2>
+        
+        <div class="note">
+            <strong>测试数据回顾：</strong>
+            <pre><code>CREATE TABLE sales (
+    dept_id INT,
+    sale_date DATE,
+    amount INT
+);
+
+INSERT INTO sales VALUES
+(1, '2024-01-01', 100),
+(1, '2024-01-02', 200),
+(1, '2024-01-03', 300),
+(1, '2024-01-03', 400),
+(2, '2024-01-01', 150),
+(2, '2024-01-02', 250),
+(2, '2024-01-03', 350),
+(1, '2024-02-01', 500),
+(1, '2024-02-02', 600),
+(2, '2024-02-01', 400),
+(2, '2024-02-02', 500);</code></pre>
+        </div>
+
+        <details>
+            <summary>题1：计算每个部门的累计销售额占比</summary>
+            <div class="answer-content">
+                <p><strong>要求：</strong>输出每行的销售额、部门累计销售额、部门总销售额、累计占比（保留2位小数）</p>
+                
+                <h3>参考答案：</h3>
+                <pre><code>SELECT
+    dept_id,
+    sale_date,
+    amount,
+    SUM(amount) OVER(PARTITION BY dept_id ORDER BY sale_date) AS cum_amount,
+    SUM(amount) OVER(PARTITION BY dept_id) AS dept_total,
+    ROUND(
+        SUM(amount) OVER(PARTITION BY dept_id ORDER BY sale_date) * 100.0 
+        / SUM(amount) OVER(PARTITION BY dept_id),
+        2
+    ) AS cum_ratio
+FROM sales;</code></pre>
+
+                <h3>输出结果（部门1）：</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>dept_id</th>
+                            <th>sale_date</th>
+                            <th>amount</th>
+                            <th>cum_amount</th>
+                            <th>dept_total</th>
+                            <th>cum_ratio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-01</td>
+                            <td>100</td>
+                            <td>100</td>
+                            <td>2100</td>
+                            <td>4.76</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-02</td>
+                            <td>200</td>
+                            <td>300</td>
+                            <td>2100</td>
+                            <td>14.29</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-03</td>
+                            <td>300</td>
+                            <td>1000</td>
+                            <td>2100</td>
+                            <td>47.62</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-03</td>
+                            <td>400</td>
+                            <td>1000</td>
+                            <td>2100</td>
+                            <td>47.62</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-02-01</td>
+                            <td>500</td>
+                            <td>1500</td>
+                            <td>2100</td>
+                            <td>71.43</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-02-02</td>
+                            <td>600</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>100.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>解析：</h3>
+                <ul>
+                    <li>两个窗口函数同时使用：一个带 <code>ORDER BY</code>（累计求和），一个不带（部门总销售额）</li>
+                    <li>注意乘以 <code>100.0</code> 而不是 <code>100</code>，避免整数除法导致结果为0</li>
+                    <li>两个1月3日的行累计值相同，因为 <code>RANGE</code> 默认会把相同排序值的行合并计算</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>题2：计算每个部门的"近2日销售额总和"</summary>
+            <div class="answer-content">
+                <p><strong>要求：</strong>计算"当天 + 前1天"的销售额总和，注意边界情况</p>
+                
+                <h3>参考答案：</h3>
+                <pre><code>SELECT
+    *,
+    SUM(amount) OVER(
+        PARTITION BY dept_id
+        ORDER BY sale_date
+        ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+    ) AS last_2d_sum
+FROM sales;</code></pre>
+
+                <h3>输出结果：</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>dept_id</th>
+                            <th>sale_date</th>
+                            <th>amount</th>
+                            <th>last_2d_sum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-01</td>
+                            <td>100</td>
+                            <td>100</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-02</td>
+                            <td>200</td>
+                            <td>300</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-03</td>
+                            <td>300</td>
+                            <td>500</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-03</td>
+                            <td>400</td>
+                            <td>700</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-02-01</td>
+                            <td>500</td>
+                            <td>900</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-02-02</td>
+                            <td>600</td>
+                            <td>1100</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-01-01</td>
+                            <td>150</td>
+                            <td>150</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-01-02</td>
+                            <td>250</td>
+                            <td>400</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-01-03</td>
+                            <td>350</td>
+                            <td>600</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-02-01</td>
+                            <td>400</td>
+                            <td>750</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-02-02</td>
+                            <td>500</td>
+                            <td>900</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>解析：</h3>
+                <ul>
+                    <li><span class="highlight">必须使用 <code>ROWS</code> 而不是 <code>RANGE</code></span>，否则相同日期的行会被合并计算</li>
+                    <li>第一行没有前一行，所以只计算自己</li>
+                    <li>部门1的两个1月3日：
+                        <ul>
+                            <li>第一个300：加前一行200 → 500</li>
+                            <li>第二个400：加前一行300 → 700</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>题3：找出错误并修正</summary>
+            <div class="answer-content">
+                <p><strong>问题：</strong>以下SQL想计算"每个部门每日销售额总和"，但结果不对，请找出错误并修正</p>
+                <pre><code>SELECT
+    dept_id,
+    sale_date,
+    SUM(amount) OVER(PARTITION BY dept_id ORDER BY sale_date) AS daily_sum
+FROM sales;</code></pre>
+
+                <h3>错误原因：</h3>
+                <p>加了 <code>ORDER BY</code> 后，窗口默认是 <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code>，变成了<strong>累计求和</strong>，而不是每日求和。</p>
+
+                <h3>正确写法：</h3>
+                <pre><code>SELECT
+    dept_id,
+    sale_date,
+    SUM(amount) OVER(PARTITION BY dept_id, sale_date) AS daily_sum
+FROM sales;</code></pre>
+
+                <h3>输出结果：</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>dept_id</th>
+                            <th>sale_date</th>
+                            <th>daily_sum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-01</td>
+                            <td>100</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-02</td>
+                            <td>200</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-03</td>
+                            <td>700</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01-03</td>
+                            <td>700</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-02-01</td>
+                            <td>500</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-02-02</td>
+                            <td>600</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-01-01</td>
+                            <td>150</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-01-02</td>
+                            <td>250</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-01-03</td>
+                            <td>350</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-02-01</td>
+                            <td>400</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-02-02</td>
+                            <td>500</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>关键提醒：</h3>
+                <ul>
+                    <li>窗口函数中，<code>PARTITION BY</code> 是"分组"，<code>ORDER BY</code> 是"组内排序并累计"</li>
+                    <li>想计算"分组内的静态聚合"，不要加 <code>ORDER BY</code></li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>挑战题：计算每个部门的月度环比增长率</summary>
+            <div class="answer-content">
+                <p><strong>要求：</strong>计算每个部门每月销售额相对于上月的环比增长率，保留2位小数</p>
+                <p><strong>公式：</strong>环比增长率 = (本月销售额 - 上月销售额) / 上月销售额 × 100%</p>
+
+                <h3>参考答案：</h3>
+                <pre><code>-- 第一步：先计算每个部门每个月的总销售额
+WITH monthly_sales AS (
+    SELECT
+        dept_id,
+        DATE_FORMAT(sale_date, '%Y-%m') AS month,
+        SUM(amount) AS monthly_amount
+    FROM sales
+    GROUP BY dept_id, month
+)
+-- 第二步：用LAG()获取上月销售额，计算环比增长率
+SELECT
+    dept_id,
+    month,
+    monthly_amount,
+    LAG(monthly_amount) OVER(PARTITION BY dept_id ORDER BY month) AS last_month_amount,
+    ROUND(
+        (monthly_amount - LAG(monthly_amount) OVER(PARTITION BY dept_id ORDER BY month)) * 100.0
+        / LAG(monthly_amount) OVER(PARTITION BY dept_id ORDER BY month),
+        2
+    ) AS growth_rate
+FROM monthly_sales;</code></pre>
+
+                <h3>输出结果：</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>dept_id</th>
+                            <th>month</th>
+                            <th>monthly_amount</th>
+                            <th>last_month_amount</th>
+                            <th>growth_rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-01</td>
+                            <td>1000</td>
+                            <td>NULL</td>
+                            <td>NULL</td>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>2024-02</td>
+                            <td>1100</td>
+                            <td>1000</td>
+                            <td>10.00</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-01</td>
+                            <td>750</td>
+                            <td>NULL</td>
+                            <td>NULL</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>2024-02</td>
+                            <td>900</td>
+                            <td>750</td>
+                            <td>20.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>解析：</h3>
+                <ul>
+                    <li>使用<strong>CTE（公共表表达式）</strong>分两步计算，逻辑更清晰
+                        <ul>
+                            <li>第一步：先聚合每日数据，得到每个部门每个月的总销售额</li>
+                            <li>第二步：在月度数据上使用窗口函数计算环比</li>
+                        </ul>
+                    </li>
+                    <li><code>LAG(monthly_amount) OVER(PARTITION BY dept_id ORDER BY month)</code>
+                        <ul>
+                            <li><code>PARTITION BY dept_id</code>：每个部门单独计算</li>
+                            <li><code>ORDER BY month</code>：按月份排序，这样LAG()才能取到上一个月的数据</li>
+                        </ul>
+                    </li>
+                    <li>第一个月没有上月数据，所以<code>last_month_amount</code>和<code>growth_rate</code>都是NULL</li>
+                    <li>如果需要把NULL显示为0，可以用<code>COALESCE(growth_rate, 0)</code>函数</li>
+                </ul>
+
+                <h3>拓展：</h3>
+                <p>如果需要计算<strong>同比增长率</strong>（和去年同月相比），只需要把LAG()的第二个参数改为12：</p>
+                <pre><code>LAG(monthly_amount, 12) OVER(PARTITION BY dept_id ORDER BY month)</code></pre>
+            </div>
+        </details>
+
+        <h2>第二部分：推断统计练习题</h2>
+
+        <details>
+            <summary>题4：置信区间计算</summary>
+            <div class="answer-content">
+                <p><strong>题目：</strong>某电商想估计用户的平均月消费金额，随机抽取了64名用户，得到：</p>
+                <ul>
+                    <li>样本均值：200元</li>
+                    <li>样本标准差：40元</li>
+                </ul>
+                <p>计算：</p>
+                <ol>
+                    <li>95%置信区间</li>
+                    <li>99%置信区间</li>
+                    <li>如果样本量增加到256，95%置信区间会变成多少？</li>
+                </ol>
+                <p>（常用z值：95%→1.96，99%→2.58）</p>
+
+                <h3>公式：</h3>
+                <div class="formula">
+                    置信区间 = x̄ ± z<sub>α/2</sub> × (s / √n)
+                </div>
+
+                <h3>计算过程：</h3>
+                <ol>
+                    <li><strong>95%置信区间（n=64）：</strong>
+                        <p>标准误 SE = 40 / √64 = 5</p>
+                        <p>置信区间 = 200 ± 1.96 × 5 = <strong>[190.2, 209.8]</strong></p>
+                    </li>
+                    <li><strong>99%置信区间（n=64）：</strong>
+                        <p>置信区间 = 200 ± 2.58 × 5 = <strong>[187.1, 212.9]</strong></p>
+                    </li>
+                    <li><strong>95%置信区间（n=256）：</strong>
+                        <p>标准误 SE = 40 / √256 = 2.5</p>
+                        <p>置信区间 = 200 ± 1.96 × 2.5 = <strong>[195.1, 204.9]</strong></p>
+                    </li>
+                </ol>
+
+                <h3>结论：</h3>
+                <ul>
+                    <li>置信水平越高，区间越宽（越容易包含真实值，但精度越低）</li>
+                    <li>样本量越大，区间越窄（精度越高）</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>题5：概念判断题（必做！90%的人会错）</summary>
+            <div class="answer-content">
+                <p><strong>题目：</strong>判断以下关于95%置信区间的说法是否正确，并解释原因</p>
+                <ol>
+                    <li>"真实的总体均值有95%的概率落在这个区间里"</li>
+                    <li>"有95%的样本均值会落在这个区间里"</li>
+                    <li>"如果重复抽样100次，计算100个置信区间，大约有95个会包含真实的总体均值"</li>
+                    <li>"这个区间有95%的概率包含真实的总体均值"</li>
+                </ol>
+
+                <h3>答案与解析：</h3>
+                <ol>
+                    <li><span class="incorrect">❌ 错误</span>
+                        <p>真实的总体均值是一个<strong>固定不变</strong>的常数，不是随机变量。它要么在区间里，要么不在，不存在"概率"一说。</p>
+                    </li>
+                    <li><span class="incorrect">❌ 错误</span>
+                        <p>置信区间是围绕<strong>本次样本均值</strong>构造的，不是用来包含其他样本均值的。</p>
+                    </li>
+                    <li><span class="correct">✅ 正确</span>
+                        <p>这是置信区间的<strong>唯一正确定义</strong>。概率是针对"构造区间的方法"而言的，不是针对某个具体的区间。</p>
+                    </li>
+                    <li><span class="incorrect">❌ 错误</span>
+                        <p>和第1题同理，具体的某个区间是固定的，它要么包含真实值，要么不包含。我们只能说"用这个方法构造的区间，有95%的概率能包含真实值"。</p>
+                    </li>
+                </ol>
+
+                <h3>通俗总结：</h3>
+                <p>置信区间说的是"方法的成功率"，不是"某个区间的成功率"。</p>
+            </div>
+        </details>
+    </div>
+</body>
+</html>
