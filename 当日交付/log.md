@@ -271,7 +271,7 @@ python -m venv .venv
 
 1. 在datagrip里直接单击右键选中表格导出
 
-   ![image-20260323220012260](E:\系统默认\桌面\Plan\求职\实践\当日交付\picture\image-20260323220012260.png)
+   ![image-20260323220012260](picture/image-20260323220012260.png)
 
 2. MySQL客户端命令行导出
 
@@ -1518,7 +1518,7 @@ petal_length          0.87        -0.42          1.00         0.96
 petal_width           0.82        -0.36          0.96         1.00
 ```
 
-![pearson_correlation_heatmap](E:\系统默认\桌面\Plan\求职\实践\当日交付\picture\pearson_correlation_heatmap-1774594278463-2.png)
+![pearson_correlation_heatmap](picture/pearson_correlation_heatmap-1774594278463-2.png)
 
 我给你**最完整、最易懂、一次性记牢**的
 
@@ -1637,7 +1637,7 @@ line 边框、fmt 小数、center 居中、square 正方形
 
 本周复习基础统计学脑图
 
-![统计学基础](E:\系统默认\桌面\Plan\求职\实践\当日交付\picture\统计学基础.png)
+![统计学基础](picture/统计学基础.png)
 
 # 2026.03.21
 
